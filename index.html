@@ -1,21 +1,36 @@
-<html>
+<!DOCTYPE html>
 
 <head>
+  <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+  <script src="bullet-motion.js" defer></script>
 </head>
 
-<body>
-  <div id="container"></div>
+<body class="bg-neutral-900 text-white">
+  <div class="flex">
+    <div class="flex-initial w-32">
+      <ul>
+        <li onclick="init('bulletMotion')">Bullet motion</li>
+      </ul>
+    </div>
+    <div>
+      <div id="container"></div>
+    </div>
+  </div>
 </body>
-<script>
-  const STAGE_WIDTH = 1200;
-  const STAGE_HEIGHT = 800;
 
-  const stage = new Konva.stage({
-    container: "container",
-    width: STAGE_WIDTH,
-    height: STAGE_HEIGHT,
-  })
+<script>
+  function init(simulationId) {
+    const id = 'container'
+    switch (simulationId) {
+      case 'bulletMotion':
+        initBulletMotion(id)
+        break
+      default:
+        console.error(`Unknown simulation: ${simulationId}`)
+        break
+    }
+  }
 </script>
 
 </html>
