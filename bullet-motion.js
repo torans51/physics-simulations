@@ -18,7 +18,7 @@ const initBulletMotion = (containerId) => {
   const state = {
     stageWidth: STAGE_WIDTH,
     stageHeight: STAGE_HEIGHT,
-    paddingPercç: PADDING_PERC,
+    paddingPerc: PADDING_PERC,
     stage,
     layer,
     timestamp: null, // current timestamp (milliseconds)
@@ -29,15 +29,16 @@ const initBulletMotion = (containerId) => {
   }
   state.stage = stage
 
-  function drawPoint(state) {
+  function updateState(state) {
     const { deltaT, pos, speed } = state
     nextPos = {
       x: speed.x * deltaT + pos.x,
       y: speed.y * deltaT + pos.y,
     }
-
     state.pos = nextPos
+  }
 
+  function drawPoint(state) {
     const circle = new Konva.Circle({
       x: state.pos.x,
       y: state.pos.y,
@@ -72,6 +73,7 @@ const initBulletMotion = (containerId) => {
       state.timestamp = timestamp
       state.deltaT = timestamp - state.prevTimestamp
 
+      updateState(state)
       drawPoint(state)
       drawAxis(state)
 
