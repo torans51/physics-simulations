@@ -18,6 +18,7 @@ const initBulletMotion = (containerId) => {
   const state = {
     stageWidth: STAGE_WIDTH,
     stageHeight: STAGE_HEIGHT,
+    paddingPercç: PADDING_PERC,
     stage,
     layer,
     timestamp: null, // current timestamp (milliseconds)
@@ -48,6 +49,23 @@ const initBulletMotion = (containerId) => {
     state.layer.add(circle)
   }
 
+  function drawAxis(state) {
+    const { stageWidth, stageHeight, paddingPerc } = state
+    const axisX = new Konva.Arrow({
+      points: [-stageWidth, 0, stageWidth * (1 - paddingPerc), 0],
+      stroke: "white",
+      strokeWidth: 3
+    })
+    state.layer.add(axisX)
+
+    const axisY = new Konva.Arrow({
+      points: [0, -stageHeight, 0, stageHeight * (1 - paddingPerc)],
+      stroke: "white",
+      strokeWidth: 3
+    })
+    state.layer.add(axisY)
+  }
+
   function draw(state) {
     return timestamp => {
       state.layer.destroyChildren()
@@ -55,6 +73,7 @@ const initBulletMotion = (containerId) => {
       state.deltaT = timestamp - state.prevTimestamp
 
       drawPoint(state)
+      drawAxis(state)
 
       state.layer.draw()
       state.prevTimestamp = timestamp
