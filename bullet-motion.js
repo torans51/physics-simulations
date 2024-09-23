@@ -19,22 +19,23 @@ const initBulletMotion = (containerId) => {
   const guiData = {
     running: true,
     restart: true,
-    timeFactor: 1, // increase or decrease simulation speed
+    timeFactor: 0.4, // increase or decrease simulation speed
     initPosX: 0,
     initPosY: 0,
     initSpeedX: 100,
     initSpeedY: 100,
     initAccX: 0,
     initAccY: -20,
-    displayPos: true,
+    displayPos: false,
     displayPosX: false,
     displayPosY: false,
-    displaySpeed: true,
+    displaySpeed: false,
     displaySpeedX: false,
     displaySpeedY: false,
-    displayAcc: true,
+    displayAcc: false,
     displayAccX: false,
     displayAccY: false,
+    drawTrajectory: false,
   }
   const state = {
     stageWidth: STAGE_WIDTH,
@@ -53,37 +54,48 @@ const initBulletMotion = (containerId) => {
     guiData,
   }
 
+  function restart(state) {
+    state.pos.x = state.guiData.initPosX
+    state.pos.y = state.guiData.initPosY
+    state.speed.x = state.guiData.initSpeedX
+    state.speed.y = state.guiData.initSpeedY
+    state.acc.x = state.guiData.initAccX
+    state.acc.y = state.guiData.initAccY
+  }
+
   gui.add(state.guiData, "running").name("Run").onChange(value => {
     state.guiData.running = !!value
   })
-  gui.add(state.guiData, "restart").name("Restart").onChange(() => {
-    state.pos.x = guiData.initPosX
-    state.pos.y = guiData.initPosY
-    state.speed.x = guiData.initSpeedX
-    state.speed.y = guiData.initSpeedY
-    state.acc.x = guiData.initAccX
-    state.acc.y = guiData.initAccY
-  })
+  gui.add(state.guiData, "restart").name("Restart").onChange(() => restart(state))
   gui.add(state.guiData, "timeFactor").name("Time speed").step(0.2).min(0.2).max(10).onFinishChange(value => {
     state.guiData.timeFactor = value
   })
+  gui.add(state.guiData, "drawTrajectory").name("Trajectory").onChange(value => {
+    state.guiData.drawTrajectory = !!value
+  })
   gui.add(state.guiData, "initPosX").name("Init position X").step(10).min(0).max(state.stageWidth).onFinishChange(value => {
     state.guiData.initPosX = value
+    restart(state)
   })
   gui.add(state.guiData, "initPosY").name("Init position Y").step(10).min(0).max(state.stageHeight).onFinishChange(value => {
     state.guiData.initPosY = value
+    restart(state)
   })
   gui.add(state.guiData, "initSpeedX").name("Init speed X").step(10).min(0).max(300).onFinishChange(value => {
     state.guiData.initSpeedX = value
+    restart(state)
   })
   gui.add(state.guiData, "initSpeedY").name("Init speed Y").step(10).min(0).max(300).onFinishChange(value => {
     state.guiData.initSpeedY = value
+    restart(state)
   })
   gui.add(state.guiData, "initAccX").name("Init acceleration X").step(5).min(-50).max(50).onFinishChange(value => {
     state.guiData.initAccX = value
+    restart(state)
   })
   gui.add(state.guiData, "initAccY").name("Init acceleration Y").step(5).min(-50).max(50).onFinishChange(value => {
     state.guiData.initAccY = value
+    restart(state)
   })
   const guiDisplayPosFolder = gui.addFolder("Display position")
   guiDisplayPosFolder.open()
@@ -137,24 +149,24 @@ const initBulletMotion = (containerId) => {
     state.speed = nextSpeed
   }
 
-  function drawPoint(state) {
+  function drawPoint(state, color) {
     const circle = new Konva.Circle({
       x: state.pos.x,
       y: state.pos.y,
       radius: 8,
-      fill: 'blue',
+      fill: color,
     })
 
     state.layer.add(circle)
   }
 
-  function drawPos(state) {
+  function drawPos(state, color) {
     const { pos, guiData } = state
 
     if (guiData.displayPos) {
       const arrow = new Konva.Arrow({
         points: [0, 0, pos.x, pos.y],
-        stroke: "purple",
+        stroke: color,
         strokeWidth: 3,
       })
       state.layer.add(arrow)
@@ -162,7 +174,7 @@ const initBulletMotion = (containerId) => {
     if (guiData.displayPos && guiData.displayPosX) {
       const arrow = new Konva.Arrow({
         points: [0, 0, pos.x, 0],
-        stroke: "purple",
+        stroke: color,
         strokeWidth: 3,
         dash: [5, 5],
       })
@@ -171,20 +183,20 @@ const initBulletMotion = (containerId) => {
     if (guiData.displayPos && guiData.displayPosY) {
       const arrow = new Konva.Arrow({
         points: [0, 0, 0, pos.y],
-        stroke: "purple",
+        stroke: color,
         strokeWidth: 3,
         dash: [5, 5],
       })
       state.layer.add(arrow)
     }
   }
-  function drawSpeed(state) {
+  function drawSpeed(state, color) {
     const { pos, speed, guiData } = state
 
     if (guiData.displaySpeed) {
       const arrow = new Konva.Arrow({
         points: [pos.x, pos.y, pos.x + speed.x, pos.y + speed.y],
-        stroke: "red",
+        stroke: color,
         strokeWidth: 3,
       })
       state.layer.add(arrow)
@@ -192,7 +204,7 @@ const initBulletMotion = (containerId) => {
     if (guiData.displaySpeed && guiData.displaySpeedX && speed.x !== 0) {
       const arrow = new Konva.Arrow({
         points: [pos.x, pos.y, pos.x, pos.y + speed.y],
-        stroke: "red",
+        stroke: color,
         strokeWidth: 3,
         dash: [5, 5],
       })
@@ -201,20 +213,20 @@ const initBulletMotion = (containerId) => {
     if (guiData.displaySpeed && guiData.displaySpeedY && speed.y !== 0) {
       const arrow = new Konva.Arrow({
         points: [pos.x, pos.y, pos.x + speed.x, pos.y],
-        stroke: "red",
+        stroke: color,
         strokeWidth: 3,
         dash: [5, 5],
       })
       state.layer.add(arrow)
     }
   }
-  function drawAcc(state) {
+  function drawAcc(state, color) {
     const { pos, acc, guiData } = state
 
     if (guiData.displayAcc) {
       const arrow = new Konva.Arrow({
         points: [pos.x, pos.y, pos.x + acc.x, pos.y + acc.y],
-        stroke: "yellow",
+        stroke: color,
         strokeWidth: 3,
       })
       state.layer.add(arrow)
@@ -222,7 +234,7 @@ const initBulletMotion = (containerId) => {
     if (guiData.displayAcc && guiData.displayAccX && acc.x !== 0) {
       const arrow = new Konva.Arrow({
         points: [pos.x, pos.y, pos.x, pos.y + acc.y],
-        stroke: "yellow",
+        stroke: color,
         strokeWidth: 3,
         dash: [5, 5],
       })
@@ -231,12 +243,35 @@ const initBulletMotion = (containerId) => {
     if (guiData.displayAcc && guiData.displayAccY && acc.y !== 0) {
       const arrow = new Konva.Arrow({
         points: [pos.x, pos.y, pos.x + acc.x, pos.y],
-        stroke: "yellow",
+        stroke: color,
         strokeWidth: 3,
         dash: [5, 5],
       })
       state.layer.add(arrow)
     }
+  }
+
+  function drawTrajectory(state, color) {
+    const { initPosX, initPosY, initSpeedX, initSpeedY, initAccX, initAccY } = state.guiData
+    const N = 20
+    const solution1 = (-initSpeedY + Math.sqrt(initSpeedY * initSpeedY - 2 * initPosY * initAccY)) / initAccY
+    const solution2 = (-initSpeedY - Math.sqrt(initSpeedY * initSpeedY - 2 * initPosY * initAccY)) / initAccY
+    const fligthTime = solution2 > solution1 ? solution2 : solution1
+    const dt = fligthTime / N
+    const points = []
+
+    for (let i = 0; i <= N; i++) {
+      const t = i * dt
+      const px = initPosX + initSpeedX * t + 0.5 * initAccX * t * t
+      const py = initPosY + initSpeedY * t + 0.5 * initAccY * t * t
+      points.push(px, py)
+    }
+    const line = new Konva.Line({
+      points,
+      stroke: color,
+      dash: [2, 2]
+    })
+    state.layer.add(line)
   }
 
   function drawAxis(state) {
@@ -268,15 +303,19 @@ const initBulletMotion = (containerId) => {
       if (state.guiData.running) updateState(state)
 
       drawAxis(state)
-      drawPoint(state)
+      drawPoint(state, "blue")
 
-      drawPos(state)
-      drawSpeed(state)
-      drawAcc(state)
+      if (state.guiData.displayPos) drawPos(state, "purple")
+      if (state.guiData.displaySpeed) drawSpeed(state, "red")
+      if (state.guiData.displayAcc) drawAcc(state, "yellow")
+      if (state.guiData.drawTrajectory) drawTrajectory(state, "green")
 
       state.layer.draw()
       state.prevTimestamp = timestamp
-      requestAnimationFrame(draw(state))
+
+      // run the animation only when the component position along y axis is > 0
+      if (state.pos.y > 0) requestAnimationFrame(draw(state))
+      else console.log("simulation ended")
     }
   }
 
