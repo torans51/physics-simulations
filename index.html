@@ -23,11 +23,18 @@
 </body>
 
 <script>
+  window.state = {
+    selectedSimulationId: null
+  }
+
   function init(simulationId) {
     const id = 'container'
     switch (simulationId) {
       case 'bulletMotion':
-        initBulletMotion(id)
+        if (window.state.selectedSimulationId !== simulationId) {
+          initBulletMotion(id)
+          window.state.selectedSimulationId = simulationId
+        }
         break
       default:
         console.error(`Unknown simulation: ${simulationId}`)
