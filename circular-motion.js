@@ -1,4 +1,4 @@
-const initBulletMotion = (containerId) => {
+const initCircularMotion = (containerId) => {
   const STAGE_WIDTH = 1200
   const STAGE_HEIGHT = 800
   const PADDING_PERC = 0.1
@@ -9,8 +9,8 @@ const initBulletMotion = (containerId) => {
     height: STAGE_HEIGHT,
   })
   const layer = new Konva.Layer({
-    offsetX: -STAGE_WIDTH * PADDING_PERC,
-    offsetY: STAGE_HEIGHT - STAGE_HEIGHT * PADDING_PERC,
+    offsetX: -STAGE_WIDTH * 0.5,
+    offsetY: STAGE_HEIGHT * 0.5,
     scaleY: -1
   })
   stage.add(layer)
@@ -20,12 +20,8 @@ const initBulletMotion = (containerId) => {
     running: false,
     restart: true,
     timeFactor: 0.4, // increase or decrease simulation speed
-    initPosX: 0,
-    initPosY: 0,
-    initSpeedX: 100,
-    initSpeedY: 100,
-    initAccX: 0,
-    initAccY: -20,
+    radius: 150,
+    period: 10,
     displayPos: false,
     displayPosX: false,
     displayPosY: false,
@@ -46,21 +42,44 @@ const initBulletMotion = (containerId) => {
     timestamp: null, // current timestamp (milliseconds)
     prevTimestamp: null, // (milliseconds)
     deltaT: null, // timestamp - prevTimestamp (seconds)
-    pos: { x: guiData.initPosX, y: guiData.initPosY }, // position of point
-    speed: { x: guiData.initSpeedX, y: guiData.initSpeedY }, // speed of point
-    acc: { x: guiData.initAccX, y: guiData.initAccY }, // acceleration of point
+    time: 0, // time elapsed from the beginning (seconds)
+    radius: guiData.radius,
+    period: guiData.period,
+    omega: (2 * Math.PI) / guiData.period,
+    pos: {
+      x: guiData.radius * Math.cos(0),
+      y: guiData.radius * Math.sin(0)
+    }, // position of point
+    speed: {
+      x: -(2 * Math.PI / guiData.period) * guiData.radius * Math.sin(0),
+      y: (2 * Math.PI / guiData.period) * guiData.radius * Math.cos(0)
+    }, // speed of point
+    acc: {
+      x: -(2 * Math.PI / guiData.period) * (2 * Math.PI / guiData.period) * guiData.radius * Math.cos(0),
+      y: -(2 * Math.PI / guiData.period) * (2 * Math.PI / guiData.period) * guiData.radius * Math.sin(0)
+    }, // acceleration of point
 
     // UI options
     guiData,
   }
 
   function restart(state) {
-    state.pos.x = state.guiData.initPosX
-    state.pos.y = state.guiData.initPosY
-    state.speed.x = state.guiData.initSpeedX
-    state.speed.y = state.guiData.initSpeedY
-    state.acc.x = state.guiData.initAccX
-    state.acc.y = state.guiData.initAccY
+    state.prevTimestamp = state.timestamp
+    state.time = 0
+    state.radius = guiData.radius
+    state.omega = 2 * Math.PI / guiData.period
+    state.pos = {
+      x: state.radius * Math.cos(state.time),
+      y: state.radius * Math.sin(state.time)
+    }
+    state.speed = {
+      x: -state.omega * state.radius * Math.sin(state.time),
+      y: state.omega * state.radius * Math.cos(state.time)
+    }
+    state.acc = {
+      x: -state.omega * state.omega * state.radius * Math.cos(state.time),
+      y: -state.omega * state.omega * state.radius * Math.sin(state.time)
+    }
   }
 
   gui.add(state.guiData, "running").name("Run").onChange(value => {
@@ -73,30 +92,16 @@ const initBulletMotion = (containerId) => {
   gui.add(state.guiData, "drawTrajectory").name("Trajectory").onChange(value => {
     state.guiData.drawTrajectory = !!value
   })
-  gui.add(state.guiData, "initPosX").name("Init position X").step(10).min(0).max(state.stageWidth).onFinishChange(value => {
+  gui.add(state.guiData, "radius").name("Radius").step(10).min(0).max(300).onFinishChange(value => {
     state.guiData.initPosX = value
+    state.guiData.initPosY = 0
     restart(state)
   })
-  gui.add(state.guiData, "initPosY").name("Init position Y").step(10).min(0).max(state.stageHeight).onFinishChange(value => {
-    state.guiData.initPosY = value
+  gui.add(state.guiData, "period").name("Period").step(1).min(1).max(20).onFinishChange(value => {
+    state.guiData.period = value
     restart(state)
   })
-  gui.add(state.guiData, "initSpeedX").name("Init speed X").step(10).min(0).max(300).onFinishChange(value => {
-    state.guiData.initSpeedX = value
-    restart(state)
-  })
-  gui.add(state.guiData, "initSpeedY").name("Init speed Y").step(10).min(0).max(300).onFinishChange(value => {
-    state.guiData.initSpeedY = value
-    restart(state)
-  })
-  gui.add(state.guiData, "initAccX").name("Init acceleration X").step(5).min(-50).max(50).onFinishChange(value => {
-    state.guiData.initAccX = value
-    restart(state)
-  })
-  gui.add(state.guiData, "initAccY").name("Init acceleration Y").step(5).min(-50).max(50).onFinishChange(value => {
-    state.guiData.initAccY = value
-    restart(state)
-  })
+
   const guiDisplayPosFolder = gui.addFolder("Display position")
   guiDisplayPosFolder.open()
   guiDisplayPosFolder.add(state.guiData, "displayPos").name("Vector").onChange(value => {
@@ -136,17 +141,19 @@ const initBulletMotion = (containerId) => {
   state.stage = stage
 
   function updateState(state) {
-    const { deltaT, pos, speed, acc } = state
-    nextPos = {
-      x: pos.x + speed.x * deltaT + 0.5 * acc.x * deltaT * deltaT,
-      y: pos.y + speed.y * deltaT + 0.5 * acc.y * deltaT * deltaT,
+    const { time, radius, omega } = state
+    state.pos = {
+      x: radius * Math.cos(omega * time),
+      y: radius * Math.sin(omega * time)
     }
-    nextSpeed = {
-      x: speed.x + acc.x * deltaT,
-      y: speed.y + acc.y * deltaT,
+    state.speed = {
+      x: -omega * radius * Math.sin(omega * time),
+      y: omega * radius * Math.cos(omega * time)
     }
-    state.pos = nextPos
-    state.speed = nextSpeed
+    state.acc = {
+      x: -omega * omega * radius * Math.cos(omega * time),
+      y: -omega * omega * radius * Math.sin(omega * time)
+    }
   }
 
   function drawPoint(state, color) {
@@ -252,22 +259,11 @@ const initBulletMotion = (containerId) => {
   }
 
   function drawTrajectory(state, color) {
-    const { initPosX, initPosY, initSpeedX, initSpeedY, initAccX, initAccY } = state.guiData
-    const N = 40
-    const solution1 = (-initSpeedY + Math.sqrt(initSpeedY * initSpeedY - 2 * initPosY * initAccY)) / initAccY
-    const solution2 = (-initSpeedY - Math.sqrt(initSpeedY * initSpeedY - 2 * initPosY * initAccY)) / initAccY
-    const fligthTime = solution2 > solution1 ? solution2 : solution1
-    const dt = fligthTime / N
-    const points = []
-
-    for (let i = 0; i <= N; i++) {
-      const t = i * dt
-      const px = initPosX + initSpeedX * t + 0.5 * initAccX * t * t
-      const py = initPosY + initSpeedY * t + 0.5 * initAccY * t * t
-      points.push(px, py)
-    }
-    const line = new Konva.Line({
-      points,
+    const { radius } = state
+    const line = new Konva.Circle({
+      x: 0,
+      y: 0,
+      radius,
       stroke: color,
       dash: [2, 2]
     })
@@ -277,14 +273,14 @@ const initBulletMotion = (containerId) => {
   function drawAxis(state) {
     const { stageWidth, stageHeight, paddingPerc } = state
     const axisX = new Konva.Arrow({
-      points: [-stageWidth, 0, stageWidth * (1 - paddingPerc), 0],
+      points: [-stageWidth / 2, 0, (stageWidth * (1 - paddingPerc)) / 2, 0],
       stroke: "white",
       strokeWidth: 3
     })
     state.layer.add(axisX)
 
     const axisY = new Konva.Arrow({
-      points: [0, -stageHeight, 0, stageHeight * (1 - paddingPerc)],
+      points: [0, -stageHeight, 0, (stageHeight * (1 - paddingPerc)) / 2],
       stroke: "white",
       strokeWidth: 3
     })
@@ -299,6 +295,7 @@ const initBulletMotion = (containerId) => {
 
       // UI options
       state.deltaT *= state.guiData.timeFactor
+      state.time += state.guiData.running ? state.deltaT : 0
 
       if (state.guiData.running) updateState(state)
 
@@ -313,9 +310,7 @@ const initBulletMotion = (containerId) => {
       state.layer.draw()
       state.prevTimestamp = timestamp
 
-      // run the animation only when the component position along y axis is > 0
-      if (state.pos.y >= 0) requestAnimationFrame(draw(state))
-      else console.log("simulation ended")
+      requestAnimationFrame(draw(state))
     }
   }
 

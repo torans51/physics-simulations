@@ -6,40 +6,26 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"
     integrity="sha512-WoO4Ih0CDOSLYafy22wZD/mcJ7k0ESLqtQsFa6zFKnEUrbtuGU+GkLtVhgt93xa2qewG5gKEC6CWlN8OaCTSVg=="
     crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="bullet-motion.js" defer></script>
 </head>
 
 <body class="bg-neutral-900 text-white">
-  <div class="flex">
-    <div class="flex-initial w-32">
-      <ul>
-        <li onclick="init('bulletMotion')">Bullet motion</li>
-      </ul>
-    </div>
-    <div>
-      <div id="container"></div>
-    </div>
+  <div class="p-10 flex justify-center align-center">
+    <ul class="flex-initial w-64 flex flex-col gap-4">
+      <li onclick="navigateTo('bullet-motion.html')"
+        class="cursor-pointer text-center bg-transparent hover:bg-blue-500 text-blue-500 font-semibold hover:text-white p-4 border border-blue-500 hover:border-transparent rounded">
+        Bullet motion
+      </li>
+      <li onclick="navigateTo('circular-motion.html')"
+        class="cursor-pointer text-center bg-transparent hover:bg-purple-500 text-purple-500 font-semibold hover:text-white p-4 border border-purple-500 hover:border-transparent rounded">
+        Circular motion
+      </li>
+    </ul>
   </div>
 </body>
 
 <script>
-  window.state = {
-    selectedSimulationId: null
-  }
-
-  function init(simulationId) {
-    const id = 'container'
-    switch (simulationId) {
-      case 'bulletMotion':
-        if (window.state.selectedSimulationId !== simulationId) {
-          initBulletMotion(id)
-          window.state.selectedSimulationId = simulationId
-        }
-        break
-      default:
-        console.error(`Unknown simulation: ${simulationId}`)
-        break
-    }
+  function navigateTo(url) {
+    window.location.href = url
   }
 </script>
 
